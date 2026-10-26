@@ -1,1 +1,672 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>House Guide - AI Home Repair Guide</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .dark .glass {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .pulse-ring {
+            box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.7);
+            animation: pulse-ring 1.5s infinite cubic-bezier(0.66, 0, 0, 1);
+        }
+        @keyframes pulse-ring {
+            to {
+                box-shadow: 0 0 0 15px rgba(14, 165, 233, 0);
+            }
+        }
+        .scan-line {
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, #0ea5e9, transparent);
+            position: absolute;
+            top: 0;
+            animation: scan 2s infinite ease-in-out;
+        }
+        @keyframes scan {
+            0% { top: 0%; }
+            50% { top: 95%; }
+            100% { top: 0%; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen font-sans transition-colors duration-300">
+
+    <!-- Header / Navbar -->
+    <header class="sticky top-0 z-40 glass border-b border-slate-200/50 dark:border-slate-800/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-sky-400 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-brand-500/30">
+                    <i class="fa-solid fa-house-chimney-crack"></i>
+                </div>
+                <div>
+                    <span class="text-xl font-bold bg-gradient-to-r from-brand-600 to-sky-400 bg-clip-text text-transparent">House Guide</span>
+                    <span class="text-xs text-slate-400 block -mt-1 font-medium">AI Smart Repair Assistant</span>
+                </div>
+            </div>
+
+            <!-- Dark mode toggle & Github link -->
+            <div class="flex items-center space-x-3">
+                <button id="themeToggle" class="p-2 rounded-xl bg-slate-200/60 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:inline"></i>
+                </button>
+                <a href="https://github.com" target="_blank" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-900 text-sm font-medium hover:opacity-90 transition">
+                    <i class="fa-brands fa-github"></i>
+                    <span class="hidden sm:inline">GitHub</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-5xl mx-auto px-4 py-8">
+        
+        <!-- Hero Banner -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">
+                Is something broken or damaged? <br class="hidden sm:inline"/>
+                <span class="bg-gradient-to-r from-brand-600 via-sky-500 to-teal-400 bg-clip-text text-transparent">Find out how to fix it in seconds!</span>
+            </h1>
+            <p class="text-slate-500 dark:text-slate-400 text-sm sm:text-base max-w-2xl mx-auto">
+                Snap a picture of the broken item, use voice search, or describe the problem. Our AI identifies the defect and provides step-by-step repair guides, video tutorials, and manuals.
+            </p>
+        </div>
+
+        <!-- Input Section (Search Bar & Upload Options) -->
+        <div class="glass rounded-2xl p-4 sm:p-6 shadow-xl mb-8 border border-slate-200 dark:border-slate-800 relative">
+            
+            <!-- File Drop / Preview Zone -->
+            <div id="dropZone" class="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-brand-500 dark:hover:border-brand-500 rounded-xl p-4 text-center cursor-pointer transition mb-4 bg-slate-50/50 dark:bg-slate-800/30">
+                
+                <!-- Default State -->
+                <div id="uploadPrompt" class="flex flex-col items-center py-4">
+                    <div class="flex space-x-3 mb-2 text-brand-500">
+                        <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
+                        <i class="fa-solid fa-camera text-2xl"></i>
+                    </div>
+                    <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                        Drag & drop a photo here or <span class="text-brand-500 underline">click to upload</span>
+                    </p>
+                    <p class="text-xs text-slate-400 mt-1">Supports JPG, PNG, WEBP (Camera or Photo Library)</p>
+                </div>
+
+                <!-- Preview State (Hidden initially) -->
+                <div id="imagePreviewContainer" class="hidden relative inline-block max-w-full">
+                    <img id="imagePreview" class="max-h-56 rounded-lg object-contain mx-auto shadow-md border dark:border-slate-700" alt="Preview" />
+                    <button id="removeImageBtn" type="button" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow hover:bg-red-600 transition text-xs">
+                        <i class="fa-solid fa-xmark w-4 h-4 flex items-center justify-center"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Hidden File Inputs -->
+            <input type="file" id="fileGallery" accept="image/*" class="hidden">
+            <input type="file" id="fileCamera" accept="image/*" capture="environment" class="hidden">
+
+            <!-- Search Bar + Voice + Buttons -->
+            <div class="flex flex-col sm:flex-row gap-3">
+                <div class="relative flex-grow">
+                    <input type="text" id="searchInput" placeholder="Describe the issue (e.g., Leaking faucet, squeaky chair)..." 
+                        class="w-full pl-4 pr-12 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 text-slate-800 dark:text-slate-100 placeholder-slate-400 text-sm sm:text-base shadow-sm">
+                    
+                    <!-- Microphone Button -->
+                    <button id="micBtn" title="Speak via Microphone" class="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 hover:text-brand-500 dark:hover:text-brand-400 transition">
+                        <i class="fa-solid fa-microphone text-lg"></i>
+                    </button>
+                </div>
+
+                <!-- Quick Camera / Gallery Buttons & Analyze -->
+                <div class="flex items-center gap-2 justify-end">
+                    <button id="cameraBtn" title="Take a picture" class="p-3 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+                        <i class="fa-solid fa-camera"></i>
+                    </button>
+                    <button id="galleryBtn" title="Choose from Gallery" class="p-3 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition">
+                        <i class="fa-solid fa-image"></i>
+                    </button>
+                    <button id="analyzeBtn" class="flex-1 sm:flex-none px-6 py-3 bg-gradient-to-r from-brand-600 to-sky-500 hover:from-brand-700 hover:to-sky-600 text-white font-semibold rounded-xl shadow-lg shadow-brand-500/20 transition flex items-center justify-center gap-2 text-sm sm:text-base">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>Analyze</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Voice Status Indicator -->
+            <div id="micStatus" class="hidden mt-2 text-xs text-brand-600 dark:text-brand-400 font-medium flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+                Listening... Speak now in English.
+            </div>
+        </div>
+
+        <!-- Preset Examples (One Click Test) -->
+        <div class="mb-10">
+            <p class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-3">Quick test presets:</p>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <button class="preset-card p-3 rounded-xl glass border border-slate-200 dark:border-slate-800 hover:border-brand-500 dark:hover:border-brand-500 text-left transition group shadow-sm" data-query="Leaking water faucet" data-img="https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=400&q=80">
+                    <div class="text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-brand-500">🚰 Leaking Faucet</div>
+                    <div class="text-[10px] text-slate-400">Plumbing issue</div>
+                </button>
+                <button class="preset-card p-3 rounded-xl glass border border-slate-200 dark:border-slate-800 hover:border-brand-500 dark:hover:border-brand-500 text-left transition group shadow-sm" data-query="Squeaky office chair" data-img="https://images.unsplash.com/photo-1580481072645-022f9a6d83d0?auto=format&fit=crop&w=400&q=80">
+                    <div class="text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-brand-500">🪑 Squeaky Chair</div>
+                    <div class="text-[10px] text-slate-400">Furniture maintenance</div>
+                </button>
+                <button class="preset-card p-3 rounded-xl glass border border-slate-200 dark:border-slate-800 hover:border-brand-500 dark:hover:border-brand-500 text-left transition group shadow-sm" data-query="Wireless earbud left side no sound" data-img="https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=400&q=80">
+                    <div class="text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-brand-500">🎧 Earbud Silent Side</div>
+                    <div class="text-[10px] text-slate-400">Electronics & Bluetooth</div>
+                </button>
+                <button class="preset-card p-3 rounded-xl glass border border-slate-200 dark:border-slate-800 hover:border-brand-500 dark:hover:border-brand-500 text-left transition group shadow-sm" data-query="TV remote control buttons not working" data-img="https://images.unsplash.com/photo-1593305841991-05c297ba4575?auto=format&fit=crop&w=400&q=80">
+                    <div class="text-xs font-semibold text-slate-800 dark:text-slate-200 group-hover:text-brand-500">📺 Unresponsive TV Remote</div>
+                    <div class="text-[10px] text-slate-400">Poor contact / Battery</div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading State (Simulated Scanning) -->
+        <div id="loadingState" class="hidden glass rounded-2xl p-8 text-center my-8 border border-slate-200 dark:border-slate-800 relative overflow-hidden">
+            <div class="scan-line"></div>
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full border-4 border-brand-500 border-t-transparent animate-spin"></div>
+            <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">Analyzing image and diagnosing problem...</h3>
+            <p class="text-xs text-slate-400 mt-1">Searching knowledge base, YouTube guides, and iFixit manuals...</p>
+        </div>
+
+        <!-- Results Section (Hidden until analyzed) -->
+        <div id="resultsSection" class="hidden space-y-6">
+            
+            <!-- Result Summary Card -->
+            <div class="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-md">
+                <div class="flex flex-col md:flex-row gap-6 items-start">
+                    <div id="resultImageContainer" class="w-full md:w-1/3 h-48 rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-800 relative flex-shrink-0">
+                        <img id="resultImg" class="w-full h-full object-cover" src="" alt="Analyzed Object">
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span id="resultCategory" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
+                                Category
+                            </span>
+                            <span id="resultDifficulty" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                Difficulty: Easy
+                            </span>
+                        </div>
+                        <h2 id="resultTitle" class="text-2xl font-bold mb-2 text-slate-900 dark:text-slate-100">Identified Problem Title</h2>
+                        <p id="resultDiagnosis" class="text-sm text-slate-600 dark:text-slate-300 mb-4">
+                            AI-generated diagnosis describing probable cause and recommended fix.
+                        </p>
+                        
+                        <!-- Required Tools Checklist -->
+                        <div class="bg-slate-100/70 dark:bg-slate-800/50 p-3 rounded-xl">
+                            <h4 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Recommended Tools:</h4>
+                            <div id="toolsList" class="flex flex-wrap gap-2">
+                                <!-- Dynamic tags inserted here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Guides & Tutorials Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Left: Video Tutorials (2 Columns on Large) -->
+                <div class="lg:col-span-2 space-y-4">
+                    <h3 class="text-lg font-bold flex items-center gap-2">
+                        <i class="fa-brands fa-youtube text-red-500"></i> Recommended YouTube Guides
+                    </h3>
+
+                    <!-- Dynamic Video List Container -->
+                    <div id="videosContainer" class="space-y-4">
+                        <!-- Dynamic video cards -->
+                    </div>
+
+                    <!-- Step-by-Step Text Guide -->
+                    <div class="glass rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm mt-6">
+                        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-brand-500"></i> Step-by-Step Repair Guide
+                        </h3>
+                        <ol id="stepsList" class="space-y-3 list-decimal list-inside text-sm text-slate-700 dark:text-slate-300">
+                            <!-- Steps dynamically inserted -->
+                        </ol>
+                    </div>
+                </div>
+
+                <!-- Right Sidebar: Web Links & Forums -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-globe text-brand-500"></i> Useful Links & Manuals
+                    </h3>
+
+                    <div id="webLinksContainer" class="space-y-3">
+                        <!-- Dynamic Links -->
+                    </div>
+
+                    <!-- Safety Warning Card -->
+                    <div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-2xl p-4 text-xs text-amber-800 dark:text-amber-300">
+                        <div class="font-bold flex items-center gap-1.5 mb-1">
+                            <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Safety Warning
+                        </div>
+                        Always unplug electrical devices before starting repairs. If working with high voltage or gas lines, consult a certified technician.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-4 right-4 translate-y-20 opacity-0 transition-all duration-300 glass px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl text-sm flex items-center gap-2 z-50">
+        <i id="toastIcon" class="fa-solid fa-circle-info text-brand-500"></i>
+        <span id="toastMsg">Notification message</span>
+    </div>
+
+    <!-- Script Logic -->
+    <script>
+        // Data Base Mock for Analysis Logic
+        const repairDatabase = [
+            {
+                keywords: ["faucet", "leaking", "dripping", "water", "tap"],
+                category: "Plumbing",
+                title: "Dripping or Leaking Faucet Seal Repair",
+                difficulty: "Easy (15-30 min)",
+                diagnosis: "Usually caused by a worn-out rubber O-ring / washer inside the faucet stem or mineral debris buildup in the aerator.",
+                tools: ["Adjustable Wrench", "Teflon Thread Seal Tape", "Replacement Rubber O-Ring"],
+                image: "https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&w=600&q=80",
+                videos: [
+                    { title: "How to Fix a Dripping Faucet (Easy Washer Replacement)", channel: "Home Repair DIY", views: "450k views", query: "how+to+fix+dripping+faucet" },
+                    { title: "How to Correctly Apply Teflon Thread Tape", channel: "Plumbing Basics", views: "210k views", query: "how+to+use+teflon+tape+plumbing" }
+                ],
+                steps: [
+                    "Shut off the main water supply valves under the sink or for the house.",
+                    "Carefully unscrew the faucet handle using an adjustable wrench.",
+                    "Remove the internal stem and inspect the rubber washer/O-ring for cracks.",
+                    "Replace the damaged rubber ring with a new matching size replacement.",
+                    "Wrap Teflon tape around the metallic threads (5 to 8 turns) and reassemble."
+                ],
+                links: [
+                    { title: "Complete Residential Plumbing Guide", site: "iFixit Guides", url: "https://www.ifixit.com" },
+                    { title: "Common Faucet Types & Repairs", site: "Home Depot Guides", url: "https://www.youtube.com" }
+                ]
+            },
+            {
+                keywords: ["chair", "squeaky", "squeak", "wheel", "office"],
+                category: "Furniture",
+                title: "Squeaky or Sticking Office Chair Fix",
+                difficulty: "Very Easy (10 min)",
+                diagnosis: "Annoying noise is caused by dry metal-on-metal friction around the gas cylinder tilt mechanism and loose frame screws.",
+                tools: ["Allen Key / Screwdriver", "Lubricant Spray (WD-40 / Silicone)", "Dry Cloth"],
+                image: "https://images.unsplash.com/photo-1580481072645-022f9a6d83d0?auto=format&fit=crop&w=600&q=80",
+                videos: [
+                    { title: "How to Stop an Office Chair From Squeaking in 2 Minutes", channel: "DIY Fixes", views: "890k views", query: "how+to+stop+squeaky+office+chair" },
+                    { title: "Lubricating Office Chair Gas Cylinder and Caster Wheels", channel: "Workshop Tips", views: "120k views", query: "lubricate+office+chair+cylinder" }
+                ],
+                steps: [
+                    "Turn the chair upside down onto a soft carpeted or towel-covered surface.",
+                    "Tighten all loose bolts on the seat base plate and armrest mounts.",
+                    "Apply penetrating lubricant (WD-40 or silicone spray) to all metal joints and tilt springs.",
+                    "Remove hair and debris tangled inside the caster wheel axles.",
+                    "Wipe away excess spray and flex the chair mechanism to distribute lubricant."
+                ],
+                links: [
+                    { title: "Ergonomic Chair Maintenance Tips", site: "Instructables", url: "https://www.instructables.com" }
+                ]
+            },
+            {
+                keywords: ["earbud", "bluetooth", "headphone", "sound", "ear", "charge", "silent"],
+                category: "Electronics",
+                title: "Wireless Earbud Audio Desync or One Side Silent",
+                difficulty: "Easy (5 min)",
+                diagnosis: "Most commonly caused by Bluetooth unsynchronization between left/right channels or dirt blocking charging pin contact points.",
+                tools: ["Cotton Swab", "Isopropyl Alcohol", "Paperclip or Pin"],
+                image: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?auto=format&fit=crop&w=600&q=80",
+                videos: [
+                    { title: "How to Hard Reset & Resync Wireless Earbuds (One Side Silent)", channel: "Tech Tips", views: "1.2M views", query: "how+to+reset+bluetooth+earbuds+one+side+not+working" },
+                    { title: "Cleaning Earbud Charging Case Contacts Correctly", channel: "Gadget Fix", views: "340k views", query: "clean+charging+contacts+earbuds" }
+                ],
+                steps: [
+                    "Forget / Remove the earbud device from your smartphone's Bluetooth list.",
+                    "Place both earbuds securely back inside the charging case.",
+                    "Hold the case pairing button or touch controls for 10-15 seconds to force a Factory Reset.",
+                    "Clean metallic charging pins inside case with a cotton swab lightly dampened in isopropyl alcohol.",
+                    "Re-enable phone Bluetooth and pair both earbuds simultaneously."
+                ],
+                links: [
+                    { title: "TWS Audio Troubleshooting Manual", site: "iFixit Repair Manuals", url: "https://www.ifixit.com" }
+                ]
+            },
+            {
+                keywords: ["remote", "tv", "battery", "button", "control"],
+                category: "Electronics",
+                title: "Unresponsive TV Remote or Sticky Buttons",
+                difficulty: "Medium (20 min)",
+                diagnosis: "Accumulated hand oil or dirt on internal rubber keypads, or oxidized battery compartment spring contacts.",
+                tools: ["Fine Screwdriver / Pry Tool", "Isopropyl Alcohol", "Cotton Swabs / Aluminum Foil"],
+                image: "https://images.unsplash.com/photo-1593305841991-05c297ba4575?auto=format&fit=crop&w=600&q=80",
+                videos: [
+                    { title: "How to Clean & Fix Unresponsive Remote Buttons", channel: "Electronics Easy", views: "670k views", query: "how+to+fix+tv+remote+buttons+not+working" }
+                ],
+                steps: [
+                    "Remove batteries and inspect springs for corrosion or leaking acid.",
+                    "Gently pry open the plastic remote casing using a thin plastic spudger or card.",
+                    "Wipe circuit board contacts and rubber keypad buttons thoroughly with isopropyl alcohol.",
+                    "Allow to air dry for 5 minutes before snapping plastic housing back together.",
+                    "Insert fresh batteries and test infrared LED signal using your smartphone camera."
+                ],
+                links: [
+                    { title: "Testing Infrared Remotes with Phone Camera", site: "Tech Direct", url: "https://youtube.com" }
+                ]
+            }
+        ];
+
+        // Default Generic Fallback
+        const genericRepair = {
+            category: "General Repair",
+            title: "General Maintenance & Inspection Guide",
+            difficulty: "Variable",
+            diagnosis: "We couldn't match a specific model, but identified general mechanical/electronic characteristics. Inspect fastenings, clean contact surfaces, and check power connections.",
+            tools: ["Universal Screwdriver Set", "Microfiber Cloth", "Multimeter / Spray Lubricant"],
+            image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=600&q=80",
+            videos: [
+                { title: "How to Safely Disassemble & Inspect Household Items", channel: "Practical DIY", views: "150k views", query: "how+to+fix+broken+household+items" },
+                { title: "Strongest Plastic & Metal Repair Bonding Techniques", channel: "Workshop Hacks", views: "410k views", query: "how+to+glue+broken+plastic+strong" }
+            ],
+            steps: [
+                "Examine the item in a well-lit area for cracked plastic, loose screws, or burnt wires.",
+                "Clean the affected surface area thoroughly with a dry or slightly damp microfiber cloth.",
+                "Check manufacturer specifications or error codes printed on product label stickers.",
+                "Search YouTube using the exact model number found on the device tag."
+            ],
+            links: [
+                { title: "Online Product Manuals Archive", site: "ManualsLib", url: "https://www.manualslib.com" },
+                { title: "Open Repair Community Guides", site: "iFixit", url: "https://www.ifixit.com" }
+            ]
+        };
+
+        // DOM Elements
+        const themeToggle = document.getElementById('themeToggle');
+        const searchInput = document.getElementById('searchInput');
+        const micBtn = document.getElementById('micBtn');
+        const micStatus = document.getElementById('micStatus');
+        const cameraBtn = document.getElementById('cameraBtn');
+        const galleryBtn = document.getElementById('galleryBtn');
+        const fileGallery = document.getElementById('fileGallery');
+        const fileCamera = document.getElementById('fileCamera');
+        const dropZone = document.getElementById('dropZone');
+        const uploadPrompt = document.getElementById('uploadPrompt');
+        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const removeImageBtn = document.getElementById('removeImageBtn');
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        const loadingState = document.getElementById('loadingState');
+        const resultsSection = document.getElementById('resultsSection');
+        const presetCards = document.querySelectorAll('.preset-card');
+
+        let currentImageData = null;
+
+        // Theme Toggle Logic
+        themeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            showToast(document.documentElement.classList.contains('dark') ? "Dark Mode enabled" : "Light Mode enabled");
+        });
+
+        // Toast Helper
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMsg').innerText = message;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // File Selection Handlers
+        galleryBtn.addEventListener('click', () => fileGallery.click());
+        cameraBtn.addEventListener('click', () => fileCamera.click());
+
+        fileGallery.addEventListener('change', (e) => handleFileSelect(e.target.files[0]));
+        fileCamera.addEventListener('change', (e) => handleFileSelect(e.target.files[0]));
+
+        // Drag & Drop
+        dropZone.addEventListener('click', (e) => {
+            if (e.target.closest('#removeImageBtn')) return;
+            if (!currentImageData) fileGallery.click();
+        });
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('border-brand-500', 'bg-brand-50/20');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('border-brand-500', 'bg-brand-50/20');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('border-brand-500', 'bg-brand-50/20');
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                handleFileSelect(e.dataTransfer.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            if (!file || !file.type.startsWith('image/')) {
+                showToast("Please select a valid image file.");
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                currentImageData = e.target.result;
+                imagePreview.src = currentImageData;
+                uploadPrompt.classList.add('hidden');
+                imagePreviewContainer.classList.remove('hidden');
+                showToast("Photo loaded successfully!");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        removeImageBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            currentImageData = null;
+            imagePreview.src = "";
+            fileGallery.value = "";
+            fileCamera.value = "";
+            imagePreviewContainer.classList.add('hidden');
+            uploadPrompt.classList.remove('hidden');
+        });
+
+        // Speech Recognition (Web Speech API set to English)
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            micBtn.addEventListener('click', () => {
+                try {
+                    recognition.start();
+                    micBtn.classList.add('text-red-500', 'pulse-ring');
+                    micStatus.classList.remove('hidden');
+                } catch (err) {
+                    recognition.stop();
+                }
+            });
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                searchInput.value = transcript;
+                showToast(`Voice recognized: "${transcript}"`);
+            };
+
+            recognition.onerror = () => {
+                showToast("Speech recognition error. Please try again.");
+                resetMicUI();
+            };
+
+            recognition.onend = () => {
+                resetMicUI();
+            };
+
+            function resetMicUI() {
+                micBtn.classList.remove('text-red-500', 'pulse-ring');
+                micStatus.classList.add('hidden');
+            }
+        } else {
+            micBtn.addEventListener('click', () => {
+                showToast("Speech recognition is not supported in this browser.");
+            });
+        }
+
+        // Preset Button Clicks
+        presetCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const query = card.getAttribute('data-query');
+                const img = card.getAttribute('data-img');
+                
+                searchInput.value = query;
+                currentImageData = img;
+                imagePreview.src = img;
+                uploadPrompt.classList.add('hidden');
+                imagePreviewContainer.classList.remove('hidden');
+
+                // Trigger analysis directly
+                performAnalysis();
+            });
+        });
+
+        // Search & Analyze Action
+        analyzeBtn.addEventListener('click', performAnalysis);
+
+        function performAnalysis() {
+            const queryText = searchInput.value.trim().toLowerCase();
+
+            if (!queryText && !currentImageData) {
+                showToast("Upload a photo or enter a description to analyze!");
+                return;
+            }
+
+            // Hide results, show loading
+            resultsSection.classList.add('hidden');
+            loadingState.classList.remove('hidden');
+            
+            // Scroll smoothly to loading
+            loadingState.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // Simulate AI delay
+            setTimeout(() => {
+                loadingState.classList.add('hidden');
+                renderResults(queryText);
+                resultsSection.classList.remove('hidden');
+                resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 1800);
+        }
+
+        // Match Query to Database
+        function renderResults(query) {
+            let matched = repairDatabase.find(item => 
+                item.keywords.some(kw => query.includes(kw))
+            );
+
+            if (!matched) {
+                matched = { ...genericRepair };
+                if (query) {
+                    matched.title = `Diagnosis for: "${query.charAt(0).toUpperCase() + query.slice(1)}"`;
+                }
+            }
+
+            // Populate UI Elements
+            document.getElementById('resultTitle').innerText = matched.title;
+            document.getElementById('resultCategory').innerText = matched.category;
+            document.getElementById('resultDifficulty').innerText = `Difficulty: ${matched.difficulty}`;
+            document.getElementById('resultDiagnosis').innerText = matched.diagnosis;
+            
+            // Set Result Image (User uploaded image preferred over database default)
+            document.getElementById('resultImg').src = currentImageData || matched.image;
+
+            // Render Tools List
+            const toolsContainer = document.getElementById('toolsList');
+            toolsContainer.innerHTML = matched.tools.map(tool => `
+                <span class="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-700 text-xs text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 flex items-center gap-1 font-medium shadow-sm">
+                    <i class="fa-solid fa-screwdriver-wrench text-brand-500 text-[10px]"></i> ${tool}
+                </span>
+            `).join('');
+
+            // Render Videos
+            const videosContainer = document.getElementById('videosContainer');
+            videosContainer.innerHTML = matched.videos.map(v => `
+                <div class="glass rounded-xl p-3 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row gap-3 items-center hover:border-brand-500/50 transition shadow-sm">
+                    <div class="w-full sm:w-36 h-20 bg-slate-800 rounded-lg flex items-center justify-center text-white relative overflow-hidden flex-shrink-0 group cursor-pointer">
+                        <i class="fa-brands fa-youtube text-3xl text-red-600 group-hover:scale-110 transition duration-200"></i>
+                        <span class="absolute bottom-1 right-1 bg-black/80 text-[10px] px-1 rounded text-slate-200">Video</span>
+                    </div>
+                    <div class="flex-1 text-center sm:text-left">
+                        <h4 class="font-bold text-sm text-slate-800 dark:text-slate-100 hover:text-brand-500">
+                            <a href="https://www.youtube.com/results?search_query=${v.query}" target="_blank">${v.title}</a>
+                        </h4>
+                        <p class="text-xs text-slate-400 mt-1">${v.channel} • ${v.views}</p>
+                        <a href="https://www.youtube.com/results?search_query=${v.query}" target="_blank" class="inline-flex items-center gap-1 text-xs font-semibold text-brand-500 hover:underline mt-2">
+                            Watch on YouTube <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                        </a>
+                    </div>
+                </div>
+            `).join('');
+
+            // Render Steps
+            const stepsList = document.getElementById('stepsList');
+            stepsList.innerHTML = matched.steps.map(step => `
+                <li class="pl-1">${step}</li>
+            `).join('');
+
+            // Render Web Links
+            const webLinksContainer = document.getElementById('webLinksContainer');
+            webLinksContainer.innerHTML = matched.links.map(l => `
+                <a href="${l.url}" target="_blank" class="glass p-3 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between hover:border-brand-500 transition group shadow-sm block">
+                    <div>
+                        <div class="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-brand-500">${l.title}</div>
+                        <div class="text-[10px] text-slate-400">${l.site}</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-xs text-slate-400 group-hover:text-brand-500 group-hover:translate-x-1 transition"></i>
+                </a>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
